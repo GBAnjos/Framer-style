@@ -1,0 +1,341 @@
+// components/App.jsx
+import React, { useState, useEffect } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import StylesList from './StylesList';
+import SyncSettings from './SyncSettings';
+import { fetchFigmaStyles, syncStylesToFramer } from '../services/styleService';
+import { Loader2, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
+
+const App = () => {
+  const [colorStyles, setColorStyles] = useState([]);
+  const [textStyles, setTextStyles] = useState([]);
+  const [selectedColorStyles, setSelectedColorStyles] = useState([]);
+  const [selectedTextStyles, setSelectedTextStyles] = useState([]);
+  const [syncStatus, setSyncStatus] = useState('idle'); // idle, loading, success, error
+  const [figmaConnected, setFigmaConnected] = useState(false);
+  const [syncProgress, setSyncProgress] = useState(0);
+  const [syncSettings, setSyncSettings] = useState({
+    overwriteExisting: true,
+    createVariables: true,
+    includeColorOpacity: true,
+    syncTextWeights: true
+  });
+
+  useEffect(() => {
+    // Check if we have a Figma connection token stored
+    const figmaToken = localStorage.getItem('figmaAccessToken');
+    if (figmaToken) {
+      setFigmaConnected(true);
+      fetchStyles();
+    }
+  }, []);
+
+  const fetchStyles = async () => {
+    setSyncStatus('loading');
+    try {
+      const { colors, text } = await fetchFigmaStyles();
+      setColorStyles(colors);
+      setTextStyles(text);
+      setSyncStatus('idle');
+    } catch (error) {
+      console.error('Error fetching styles:', error);
+      setSyncStatus('error');
+    }
+  };
+
+  const handleConnect = () => {
+    // In a real implementation, this would open the Figma OAuth flow
+    // For demo purposes, we'll simulate a successful connection
+    const mockToken = 'mock-figma-token-' + Date.now();
+    localStorage.setItem('figmaAccessToken', mockToken);
+    setFigmaConnected(true);
+    fetchStyles();
+  };
+
+  const handleDisconnect = () => {
+    localStorage.removeItem('figmaAccessToken');
+    setFigmaConnected(false);
+    setColorStyles([]);
+    setTextStyles([]);
+    setSelectedColorStyles([]);
+    setSelectedTextStyles([]);
+  };
+
+  const toggleColorStyle = (styleId) => {
+    setSelectedColorStyles(prev => 
+      prev.includes(styleId) 
+        ? prev.filter(id => id !== styleId)
+        : [...prev, styleId]
+    );
+  };
+
+  const toggleTextStyle = (styleId) => {
+    setSelectedTextStyles(prev => 
+      prev.includes(styleId) 
+        ? prev.filter(id => id !== styleId)
+        : [...prev, styleId]
+    );
+  };
+
+  const selectAllColorStyles = () => {
+    setSelectedColorStyles(colorStyles.map(style => style.id));
+  };
+
+  const selectAllTextStyles = () => {
+    setSelectedTextStyles(textStyles.map(style => style.id));
+  };
+
+  const deselectAllColorStyles = () => {
+    setSelectedColorStyles([]);
+  };
+
+  const deselectAllTextStyles = () => {
+    setSelectedTextStyles([]);
+  };
+
+  const handleSyncSettings = (setting, value) => {
+    setSyncSettings(prev => ({
+      ...prev,
+      [setting]: value
+    }));
+  };
+
+  const handleSync = async () => {
+    setSyncStatus('loading');
+    setSyncProgress(0);
+    
+    try {
+      const totalStylesToSync = selectedColorStyles.length + selectedTextStyles.length;
+      let completed = 0;
+      
+      // Get selected styles objects
+      const selectedColors = colorStyles.filter(style => selectedColorStyles.includes(style.id));
+      const selectedText = textStyles.filter(style => selectedTextStyles.includes(style.id));
+      
+      // Sync to Framer
+      await syncStylesToFramer(
+        selectedColors, 
+        selectedText, 
+        syncSettings,
+        (progress) => {
+          completed++;
+          setSyncProgress(Math.round((completed / totalStylesToSync) * 100));
+        }
+      );
+      
+      setSyncStatus('success');
+    } catch (error) {
+      console.error('Error syncing styles:', error);
+      setSyncStatus('error');
+    }
+  };
+
+  return (
+    <div className="w-full p-4 max-w-md mx-auto">
+      <header className="mb-6 text-center">
+        <h1 className="text-2xl font-bold">Figma Style Sync</h1>
+        <p className="text-gray-500">Sync color and text styles from Figma to Framer</p>
+      </header>
+
+      {!figmaConnected ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Connect to Figma</CardTitle>
+            <CardDescription>
+              Connect to your Figma account to access your styles
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button onClick={handleConnect} className="w-full">
+              Connect Figma Account
+            </Button>
+          </CardFooter>
+        </Card>
+      ) : (
+        <>
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-sm text-green-600 flex items-center">
+              <CheckCircle2 size={16} className="mr-1" />
+              Connected to Figma
+            </span>
+            <Button variant="outline" size="sm" onClick={handleDisconnect}>
+              Disconnect
+            </Button>
+          </div>
+
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="mb-4"
+            onClick={fetchStyles}
+            disabled={syncStatus === 'loading'}
+          >
+            {syncStatus === 'loading' ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Refreshing...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Refresh Styles
+              </>
+            )}
+          </Button>
+
+          <Tabs defaultValue="colors">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="colors">Colors ({colorStyles.length})</TabsTrigger>
+              <TabsTrigger value="text">Typography ({textStyles.length})</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="colors">
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle>Color Styles</CardTitle>
+                    <div className="space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={selectAllColorStyles}
+                      >
+                        Select All
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={deselectAllColorStyles}
+                      >
+                        Deselect All
+                      </Button>
+                    </div>
+                  </div>
+                  <CardDescription>
+                    Select the color styles you want to sync to Framer
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <StylesList 
+                    styles={colorStyles} 
+                    selectedStyles={selectedColorStyles}
+                    onToggleStyle={toggleColorStyle}
+                    type="color"
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="text">
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle>Text Styles</CardTitle>
+                    <div className="space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={selectAllTextStyles}
+                      >
+                        Select All
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={deselectAllTextStyles}
+                      >
+                        Deselect All
+                      </Button>
+                    </div>
+                  </div>
+                  <CardDescription>
+                    Select the text styles you want to sync to Framer
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <StylesList 
+                    styles={textStyles} 
+                    selectedStyles={selectedTextStyles}
+                    onToggleStyle={toggleTextStyle}
+                    type="text"
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Sync Settings</CardTitle>
+              <CardDescription>
+                Configure how styles will be synced to Framer
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SyncSettings 
+                settings={syncSettings}
+                onChangeSetting={handleSyncSettings}
+              />
+            </CardContent>
+          </Card>
+
+          {syncStatus === 'loading' && (
+            <div className="mt-6">
+              <Progress value={syncProgress} className="w-full" />
+              <p className="text-center text-sm mt-2">
+                Syncing styles... {syncProgress}%
+              </p>
+            </div>
+          )}
+
+          {syncStatus === 'success' && (
+            <Alert className="mt-6" variant="success">
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertTitle>Success!</AlertTitle>
+              <AlertDescription>
+                All selected styles have been synced to Framer.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {syncStatus === 'error' && (
+            <Alert className="mt-6" variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>
+                Something went wrong while syncing styles. Please try again.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <Button 
+            className="w-full mt-6" 
+            onClick={handleSync}
+            disabled={
+              syncStatus === 'loading' || 
+              (selectedColorStyles.length === 0 && selectedTextStyles.length === 0)
+            }
+          >
+            {syncStatus === 'loading' ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Syncing...
+              </>
+            ) : (
+              'Sync Selected Styles to Framer'
+            )}
+          </Button>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default App;

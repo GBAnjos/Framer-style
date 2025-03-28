@@ -1,0 +1,85 @@
+// components/StylesList.jsx
+import React from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+const StylesList = ({ styles, selectedStyles, onToggleStyle, type }) => {
+  if (!styles || styles.length === 0) {
+    return (
+      <div className="py-3 text-center text-gray-500 italic">
+        No styles found. Connect to Figma and refresh to load styles.
+      </div>
+    );
+  }
+
+  return (
+    <ScrollArea className="h-64 pr-4">
+      <div className="space-y-2">
+        {styles.map((style) => (
+          <StyleItem 
+            key={style.id}
+            style={style}
+            isSelected={selectedStyles.includes(style.id)}
+            onToggle={() => onToggleStyle(style.id)}
+            type={type}
+          />
+        ))}
+      </div>
+    </ScrollArea>
+  );
+};
+
+const StyleItem = ({ style, isSelected, onToggle, type }) => {
+  return (
+    <div className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded-md">
+      <Checkbox 
+        id={style.id} 
+        checked={isSelected} 
+        onCheckedChange={onToggle}
+      />
+      
+      <div className="flex-1">
+        <label 
+          htmlFor={style.id}
+          className="text-sm font-medium cursor-pointer"
+        >
+          {style.name}
+        </label>
+        
+        <div className="flex items-center mt-1">
+          {type === 'color' ? (
+            <div className="flex items-center space-x-2">
+              <div 
+                className="w-4 h-4 rounded-full border"
+                style={{ 
+                  backgroundColor: style.value,
+                  borderColor: style.value === '#FFFFFF' || style.value === '#FFF' ? '#E2E8F0' : style.value 
+                }}
+              />
+              <span className="text-xs text-gray-500">{style.value}</span>
+            </div>
+          ) : (
+            <div className="flex flex-col text-xs">
+              <span 
+                style={{ 
+                  fontFamily: style.fontFamily, 
+                  fontSize: `${style.fontSize}px`,
+                  fontWeight: style.fontWeight,
+                  lineHeight: style.lineHeight
+                }}
+              >
+                {style.fontFamily} • {style.fontSize}px
+              </span>
+              <span className="text-gray-500 mt-1">
+                Weight: {style.fontWeight} • Line Height: {style.lineHeight}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default StylesList;

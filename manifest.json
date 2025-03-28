@@ -1,0 +1,14 @@
+{
+  "name": "Figma Style Sync",
+  "id": "figma-style-sync",
+  "api": "1.0.0",
+  "main": "dist/index.js",
+  "ui": "dist/index.html",
+  "editorType": ["figma"],
+  "containsWidget": true,
+  "widgetApi": "1.0.0",
+  "permissions": ["currentuser", "activeusers", "fileusers"],
+  "enableProposedApi": false,
+  "enablePrivatePluginApi": true,
+  "requiredPermissions": ["styleguide:read"]
+}

@@ -1,0 +1,125 @@
+// components/SyncSettings.jsx
+import React from 'react';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { HelpCircle } from 'lucide-react';
+
+const SyncSettings = ({ settings, onChangeSetting }) => {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Label htmlFor="overwriteExisting" className="cursor-pointer">
+            Overwrite existing styles
+          </Label>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-4 w-4 text-gray-400" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="w-80">
+                  When enabled, existing styles in Framer with the same name will be
+                  overwritten. When disabled, duplicate names will be created with a suffix.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <Switch
+          id="overwriteExisting"
+          checked={settings.overwriteExisting}
+          onCheckedChange={(value) => onChangeSetting('overwriteExisting', value)}
+        />
+      </div>
+
+      <Separator />
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Label htmlFor="createVariables" className="cursor-pointer">
+            Create Framer variables
+          </Label>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-4 w-4 text-gray-400" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="w-80">
+                  When enabled, styles will be created as Framer variables in addition
+                  to styles, making them easier to update globally.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <Switch
+          id="createVariables"
+          checked={settings.createVariables}
+          onCheckedChange={(value) => onChangeSetting('createVariables', value)}
+        />
+      </div>
+
+      <Separator />
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Label htmlFor="includeColorOpacity" className="cursor-pointer">
+            Include color opacity
+          </Label>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-4 w-4 text-gray-400" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="w-80">
+                  When enabled, opacity values from Figma colors will be preserved.
+                  When disabled, all colors will have 100% opacity.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <Switch
+          id="includeColorOpacity"
+          checked={settings.includeColorOpacity}
+          onCheckedChange={(value) => onChangeSetting('includeColorOpacity', value)}
+        />
+      </div>
+
+      <Separator />
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Label htmlFor="syncTextWeights" className="cursor-pointer">
+            Sync text weights & variants
+          </Label>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-4 w-4 text-gray-400" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="w-80">
+                  When enabled, font weight and variant information will be synced.
+                  This helps maintain consistent typography across platforms.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <Switch
+          id="syncTextWeights"
+          checked={settings.syncTextWeights}
+          onCheckedChange={(value) => onChangeSetting('syncTextWeights', value)}
+        />
+      </div>
+    </div>
+  );
+};
+
+export default SyncSettings;
